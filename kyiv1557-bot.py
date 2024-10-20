@@ -53,13 +53,13 @@ async def main():
 
     try:
         await kyiv1557.login_from_file()
-        assert kyiv1557.current_address_id, "Can't parse current address"
+        assert kyiv1557.current_address, "Can't parse current address"
         assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:
         await tg.send(repr(e), admin=True)
         return
 
-    hash_file = HashFile(kyiv1557.current_address_id)
+    hash_file = HashFile(kyiv1557.current_address.id)
 
     if hash_file.check(kyiv1557.messages):
         for message in kyiv1557.messages:

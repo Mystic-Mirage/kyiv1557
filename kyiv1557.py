@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from dataclasses import dataclass
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -7,9 +7,11 @@ from universalasync import async_to_sync_wraps, get_event_loop
 __all__ = ["Kyiv1557"]
 
 
-class _AddressData(NamedTuple):
+@dataclass
+class Address:
     id: str
     name: str
+    selected: bool
 
 
 class Kyiv1557:
@@ -21,8 +23,8 @@ class Kyiv1557:
     _CONFIG_SECTION = "1557"
 
     def __init__(self):
-        self._addresses: dict[str, _AddressData] | None = None
-        self._current_address: _AddressData | None = None
+        self._addresses: list[Address] | None = None
+        self._current_address: Address | None = None
         self._messages: list[str] | None = None
 
         loop = get_event_loop()
@@ -50,15 +52,16 @@ class Kyiv1557:
         if (select := bs.find("select", {"id": self._SELECT_ID})) and (
             options := select.find_all("option")
         ):
-            self._addresses = {}
+            self._addresses = []
             for option in options:
-                name = option.text.strip()
-                address_data = _AddressData(option["value"], name)
-                self._addresses[name] = address_data
-                if option.has_attr("selected"):
-                    self._current_address = address_data
+                address = Address(
+                    option["value"], option.text.strip(), option.has_attr("selected")
+                )
+                self._addresses.append(address)
+                if address.selected:
+                    self._current_address = address
             if not self._current_address:
-                self._current_address = next(iter(self._addresses.values()))
+                self._current_address = self._addresses[0]
 
         if blocks := bs.find_all("div", {"class": self._MESSAGE_BLOCK_CLASS}):
             self._messages = []
@@ -74,15 +77,11 @@ class Kyiv1557:
 
     @property
     def addresses(self):
-        return list(self._addresses)
+        return self._addresses
 
     @property
     def current_address(self):
-        return self._current_address.name
-
-    @property
-    def current_address_id(self):
-        return self._current_address.id
+        return self._current_address
 
     @property
     def messages(self):
@@ -115,17 +114,15 @@ class Kyiv1557:
         await self.login(phone, password)
 
     @async_to_sync_wraps
-    async def select_address(self, address):
+    async def select_address(self, address: Address):
         url = self._url()
 
-        if self._addresses:
-            if addr_data := self._addresses.get(address):
-                async with self._session.post(
-                    url, data={"main-address": addr_data.id}
-                ) as response:
-                    response.raise_for_status()
+        async with self._session.post(
+            url, data={"main-address": address.id}
+        ) as response:
+            response.raise_for_status()
 
-                    self._parse(await response.text())
+            self._parse(await response.text())
 
 
 if __name__ == "__main__":
