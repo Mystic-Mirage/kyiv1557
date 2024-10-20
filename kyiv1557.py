@@ -13,11 +13,17 @@ class Kyiv1557Address:
     id: str
     name: str
 
+    def __str__(self):
+        return self.name
+
 
 @dataclass
 class Kyiv1557Message:
     text: str
     warn: bool
+
+    def __str__(self):
+        return self.text
 
 
 class Kyiv1557:
@@ -136,13 +142,16 @@ if __name__ == "__main__":
     kyiv1557 = Kyiv1557()
     kyiv1557.login_from_file()
 
-    print(kyiv1557.addresses)
-
     print(kyiv1557.current_address)
-    print(kyiv1557.messages)
+    for message in kyiv1557.messages:
+        print("---")
+        print(message)
 
     for address in kyiv1557.addresses[1:]:
+        print("===")
         kyiv1557.select_address(address)
 
         print(kyiv1557.current_address)
-        print(kyiv1557.messages)
+        for message in kyiv1557.messages:
+            print("---")
+            print(message)
