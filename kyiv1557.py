@@ -73,10 +73,8 @@ class Kyiv1557:
                 items = block.find_all("div", {"class": self._MESSAGE_ITEM_CLASS})
                 message = Kyiv1557Message(
                     "\n".join(
-                        [
-                            " ".join(line.strip() for line in tag.text.split())
-                            for tag in items
-                        ]
+                        " ".join(line.strip() for line in tag.text.split())
+                        for tag in items
                     ),
                     self._MESSAGE_WARN_CLASS in block.attrs.get("class", []),
                 )
