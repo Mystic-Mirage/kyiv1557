@@ -1,3 +1,4 @@
+from contextlib import suppress
 from dataclasses import dataclass
 
 from aiohttp import ClientSession
@@ -43,7 +44,8 @@ class Kyiv1557:
             register(self.__del__)
 
     def __del__(self):
-        get_event_loop().create_task(self._session.close())
+        with suppress(Exception):
+            get_event_loop().create_task(self._session.close())
 
     def _url(self, path: str = ""):
         return f"{self._URL}/{path}"
