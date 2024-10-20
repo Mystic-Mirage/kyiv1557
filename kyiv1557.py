@@ -139,9 +139,8 @@ if __name__ == "__main__":
     print(kyiv1557.current_address)
     print(kyiv1557.messages)
 
-    for address in kyiv1557.addresses:
-        if kyiv1557.current_address != address:
-            kyiv1557.select_address(address)
+    for address in kyiv1557.addresses[1:]:
+        kyiv1557.select_address(address)
 
-            print(kyiv1557.current_address)
-            print(kyiv1557.messages)
+        print(kyiv1557.current_address)
+        print(kyiv1557.messages)
