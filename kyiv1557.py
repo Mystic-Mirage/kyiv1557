@@ -4,18 +4,18 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from universalasync import async_to_sync_wraps, get_event_loop
 
-__all__ = ["Kyiv1557"]
+__all__ = ["Kyiv1557", "Kyiv1557Address", "Kyiv1557Message"]
 
 
 @dataclass
-class Address:
+class Kyiv1557Address:
     id: str
     name: str
     selected: bool
 
 
 @dataclass
-class Message:
+class Kyiv1557Message:
     text: str
     warn: bool
 
@@ -30,9 +30,9 @@ class Kyiv1557:
     _CONFIG_SECTION = "1557"
 
     def __init__(self):
-        self._addresses: list[Address] | None = None
-        self._current_address: Address | None = None
-        self._messages: list[Message] | None = None
+        self._addresses: list[Kyiv1557Address] | None = None
+        self._current_address: Kyiv1557Address | None = None
+        self._messages: list[Kyiv1557Message] | None = None
 
         loop = get_event_loop()
         self._session = ClientSession(loop=loop)
@@ -61,9 +61,7 @@ class Kyiv1557:
         ):
             self._addresses = []
             for option in options:
-                address = Address(
-                    option["value"], option.text.strip(), option.has_attr("selected")
-                )
+                address = Kyiv1557Address(option["value"], option.text.strip())
                 self._addresses.append(address)
                 if address.selected:
                     self._current_address = address
@@ -74,7 +72,7 @@ class Kyiv1557:
             self._messages = []
             for block in blocks:
                 items = block.find_all("div", {"class": self._MESSAGE_ITEM_CLASS})
-                message = Message(
+                message = Kyiv1557Message(
                     "\n".join(
                         [
                             " ".join(line.strip() for line in tag.text.split())
@@ -124,7 +122,7 @@ class Kyiv1557:
         await self.login(phone, password)
 
     @async_to_sync_wraps
-    async def select_address(self, address: Address):
+    async def select_address(self, address: Kyiv1557Address):
         url = self._url()
 
         async with self._session.post(

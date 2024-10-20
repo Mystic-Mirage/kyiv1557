@@ -6,7 +6,7 @@ from pathlib import Path
 
 from aiohttp import ClientSession
 
-from kyiv1557 import Kyiv1557, Message
+from kyiv1557 import Kyiv1557, Kyiv1557Message
 
 
 class Telegram:
@@ -27,7 +27,7 @@ class Telegram:
 
     async def send(self, message, *, admin=False):
         icon = ""
-        if isinstance(message, Message):
+        if isinstance(message, Kyiv1557Message):
             text = message.text
             icon = "⚠️" if message.warn else "✅"
         else:
