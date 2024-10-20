@@ -1,4 +1,3 @@
-from configparser import ConfigParser
 from typing import NamedTuple
 
 from aiohttp import ClientSession
@@ -105,6 +104,8 @@ class Kyiv1557:
 
     @async_to_sync_wraps
     async def login_from_file(self, filename=_DEFAULT_CONFIG_FILENAME):
+        from configparser import ConfigParser
+
         config = ConfigParser()
         config.read(filename)
 
