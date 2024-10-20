@@ -1,8 +1,9 @@
 from configparser import ConfigParser
 from typing import NamedTuple
 
+from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from requests import Session
+from universalasync import async_to_sync_wraps, get_event_loop
 
 __all__ = ["Kyiv1557"]
 
@@ -22,30 +23,42 @@ class Kyiv1557:
 
     def __init__(self):
         self._bs = None
-        self._session = Session()
+
+        loop = get_event_loop()
+        self._session = ClientSession(loop=loop)
+
+        if not loop.is_running():
+            from atexit import register
+
+            register(self.__del__)
+
+    def __del__(self):
+        get_event_loop().create_task(self._session.close())
 
     def _url(self, path=""):
         return f"{self._URL}/{path}"
 
-    def login(self, phone=None, password=None):
+    @async_to_sync_wraps
+    async def login(self, phone=None, password=None):
         url = self._url("login")
 
-        response = self._session.post(url, data={"phone": phone})
-        response.raise_for_status()
+        async with self._session.post(url, data={"phone": phone}) as response:
+            response.raise_for_status()
 
-        response = self._session.post(response.url, data={"pass": password})
-        response.raise_for_status()
+        async with self._session.post(response.url, data={"pass": password}) as response:
+            response.raise_for_status()
 
-        self._bs = BeautifulSoup(response.text, "html.parser")
+            self._bs = BeautifulSoup(await response.text(), "html.parser")
 
-    def login_from_file(self, filename=_DEFAULT_CONFIG_FILENAME):
+    @async_to_sync_wraps
+    async def login_from_file(self, filename=_DEFAULT_CONFIG_FILENAME):
         config = ConfigParser()
         config.read(filename)
 
         phone = config.get(self._CONFIG_SECTION, "phone")
         password = config.get(self._CONFIG_SECTION, "pass")
 
-        self.login(phone, password)
+        await self.login(phone, password)
 
     def __addresses(self):
         select = self._bs.find("select", {"id": self._SELECT_ID})
@@ -91,14 +104,15 @@ class Kyiv1557:
                 or tuple(addresses)[0]
             ).id
 
-    def select_address(self, address):
+    @async_to_sync_wraps
+    async def select_address(self, address):
         url = self._url()
 
         if addr_data := self.__addresses().get(address):
-            response = self._session.post(url, data={"main-address": addr_data.id})
-            response.raise_for_status()
+            async with self._session.post(url, data={"main-address": addr_data.id}) as response:
+                response.raise_for_status()
 
-            self._bs = BeautifulSoup(response.text, "html.parser")
+                self._bs = BeautifulSoup(await response.text(), "html.parser")
 
     @property
     def messages(self):

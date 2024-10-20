@@ -1,8 +1,10 @@
+import asyncio
+from asyncio import get_event_loop
 from configparser import ConfigParser
 from hashlib import sha256
 from pathlib import Path
 
-import requests
+from aiohttp import ClientSession
 
 from kyiv1557 import Kyiv1557
 
@@ -18,9 +20,14 @@ class Telegram:
         self._chat = config.get("telegram", "chat")
         self._admin = config.get("telegram", "admin")
 
-    def send(self, message, *, admin=False):
+        self._session = ClientSession()
+
+    def __del__(self):
+        get_event_loop().create_task(self._session.close())
+
+    async def send(self, message, *, admin=False):
         chat = self._admin if admin else self._chat
-        response = requests.post(self._url, {"chat_id": chat, "text": message})
+        response = await self._session.post(self._url, data={"chat_id": chat, "text": message})
         response.raise_for_status()
 
 
@@ -38,26 +45,26 @@ class HashFile:
         self._path.write_bytes(self._new_hash)
 
 
-def main():
+async def main():
     kyiv1557 = Kyiv1557()
     tg = Telegram()
 
     try:
-        kyiv1557.login_from_file()
+        await kyiv1557.login_from_file()
         assert (current := kyiv1557.current_address_id), "Can't parse current address"
         assert (messages := kyiv1557.messages), "Can't parse messages"
     except Exception as e:
-        tg.send(repr(e), admin=True)
+        await tg.send(repr(e), admin=True)
         return
 
     hash_file = HashFile(current)
 
     if hash_file.check(messages):
         for message in kyiv1557.messages:
-            tg.send(message)
+            await tg.send(message)
 
         hash_file.save()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
