@@ -27,7 +27,9 @@ class Telegram:
 
     async def send(self, message, *, admin=False):
         chat = self._admin if admin else self._chat
-        response = await self._session.post(self._url, data={"chat_id": chat, "text": message})
+        response = await self._session.post(
+            self._url, data={"chat_id": chat, "text": message}
+        )
         response.raise_for_status()
 
 
@@ -51,15 +53,15 @@ async def main():
 
     try:
         await kyiv1557.login_from_file()
-        assert (current := kyiv1557.current_address_id), "Can't parse current address"
-        assert (messages := kyiv1557.messages), "Can't parse messages"
+        assert kyiv1557.current_address_id, "Can't parse current address"
+        assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:
         await tg.send(repr(e), admin=True)
         return
 
-    hash_file = HashFile(current)
+    hash_file = HashFile(kyiv1557.current_address_id)
 
-    if hash_file.check(messages):
+    if hash_file.check(kyiv1557.messages):
         for message in kyiv1557.messages:
             await tg.send(message)
 
