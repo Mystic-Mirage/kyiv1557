@@ -14,18 +14,25 @@ class Address:
     selected: bool
 
 
+@dataclass
+class Message:
+    text: str
+    warn: bool
+
+
 class Kyiv1557:
     _URL = "https://1557.kyiv.ua"
     _SELECT_ID = "address-select"
     _MESSAGE_BLOCK_CLASS = "claim-message-block"
     _MESSAGE_ITEM_CLASS = "claim-message-item"
+    _MESSAGE_WARN_CLASS = "claim-message-green"
     _DEFAULT_CONFIG_FILENAME = "1557.ini"
     _CONFIG_SECTION = "1557"
 
     def __init__(self):
         self._addresses: list[Address] | None = None
         self._current_address: Address | None = None
-        self._messages: list[str] | None = None
+        self._messages: list[Message] | None = None
 
         loop = get_event_loop()
         self._session = ClientSession(loop=loop)
@@ -67,11 +74,14 @@ class Kyiv1557:
             self._messages = []
             for block in blocks:
                 items = block.find_all("div", {"class": self._MESSAGE_ITEM_CLASS})
-                message = "\n".join(
-                    [
-                        " ".join(line.strip() for line in tag.text.split())
-                        for tag in items
-                    ]
+                message = Message(
+                    "\n".join(
+                        [
+                            " ".join(line.strip() for line in tag.text.split())
+                            for tag in items
+                        ]
+                    ),
+                    self._MESSAGE_WARN_CLASS in block.attrs.get("class", []),
                 )
                 self._messages.append(message)
 

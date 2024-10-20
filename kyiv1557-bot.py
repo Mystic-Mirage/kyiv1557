@@ -6,7 +6,7 @@ from pathlib import Path
 
 from aiohttp import ClientSession
 
-from kyiv1557 import Kyiv1557
+from kyiv1557 import Kyiv1557, Message
 
 
 class Telegram:
@@ -26,9 +26,17 @@ class Telegram:
         get_event_loop().create_task(self._session.close())
 
     async def send(self, message, *, admin=False):
+        icon = ""
+        if isinstance(message, Message):
+            text = message.text
+            icon = "⚠️" if message.warn else "✅"
+        else:
+            text = message
+        if admin:
+            icon = "⛔"
         chat = self._admin if admin else self._chat
         response = await self._session.post(
-            self._url, data={"chat_id": chat, "text": message}
+            self._url, data={"chat_id": chat, "text": " ".join((icon, text))}
         )
         response.raise_for_status()
 
