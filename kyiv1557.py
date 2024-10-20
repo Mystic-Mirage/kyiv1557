@@ -11,7 +11,6 @@ __all__ = ["Kyiv1557", "Kyiv1557Address", "Kyiv1557Message"]
 class Kyiv1557Address:
     id: str
     name: str
-    selected: bool
 
 
 @dataclass
@@ -63,7 +62,7 @@ class Kyiv1557:
             for option in options:
                 address = Kyiv1557Address(option["value"], option.text.strip())
                 self._addresses.append(address)
-                if address.selected:
+                if option.has_attr("selected"):
                     self._current_address = address
             if not self._current_address:
                 self._current_address = self._addresses[0]
