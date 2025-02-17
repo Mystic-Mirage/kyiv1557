@@ -12,6 +12,27 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+const (
+	mainUrl   = "https://1557.kyiv.ua/"
+	loginPath = "login"
+
+	selectId      = "address-select"
+	msgBlockClass = "claim-message-block"
+	msgItemClass  = "claim-message-item"
+	msgWarnClass  = "claim-message-green"
+
+	defaultConfigFilename = "1557.ini"
+	configSection         = "1557"
+
+	loginField = "phone"
+	passField  = "pass"
+
+	addrSwitchField = "main-address"
+
+	msgDelimiter  = "---"
+	addrDelimiter = "==="
+)
+
 type Kyiv1557Address struct {
 	Id   string
 	Name string
@@ -31,7 +52,7 @@ type Kyiv1557 struct {
 }
 
 func getUrl(paths ...string) string {
-	return "https://1557.kyiv.ua/" + strings.Join(paths, "/")
+	return mainUrl + strings.Join(paths, "/")
 }
 
 func (k *Kyiv1557) parse(body io.ReadCloser) {
@@ -46,7 +67,7 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 		return
 	}
 
-	doc.Find("select#address-select").Find("option").Each(
+	doc.Find("select#" + selectId).Find("option").Each(
 		func(i int, s *goquery.Selection) {
 			id, _ := s.Attr("value")
 			name := strings.TrimSpace(s.Text())
@@ -64,11 +85,11 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 		},
 	)
 
-	doc.Find("div.claim-message-block").Each(
+	doc.Find("div." + msgBlockClass).Each(
 		func(i int, s *goquery.Selection) {
 			paragraphs := []string{}
 
-			s.Find("div.claim-message-item").Each(
+			s.Find("div." + msgItemClass).Each(
 				func(i int, s *goquery.Selection) {
 					lines := []string{}
 
@@ -83,7 +104,7 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 			)
 
 			text := strings.Join(paragraphs, "\n")
-			warn := s.HasClass("claim-message-green")
+			warn := s.HasClass(msgWarnClass)
 
 			message := &Kyiv1557Message{text, warn}
 			k.Messages = append(k.Messages, message)
@@ -101,16 +122,16 @@ func (k *Kyiv1557) Login(phone string, password string) {
 		Jar: jar,
 	}
 
-	loginUrl := getUrl("login")
+	loginUrl := getUrl(loginPath)
 
-	resp, err := k.client.PostForm(loginUrl, url.Values{"phone": {phone}})
+	resp, err := k.client.PostForm(loginUrl, url.Values{loginField: {phone}})
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
 	redirectUrl := resp.Request.URL.String()
-	resp, err = k.client.PostForm(redirectUrl, url.Values{"pass": {password}})
+	resp, err = k.client.PostForm(redirectUrl, url.Values{passField: {password}})
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +141,7 @@ func (k *Kyiv1557) Login(phone string, password string) {
 
 func (k *Kyiv1557) LoginFromFile(filename string) {
 	if filename == "" {
-		filename = "1557.ini"
+		filename = defaultConfigFilename
 	}
 
 	cfg, err := ini.Load(filename)
@@ -128,10 +149,10 @@ func (k *Kyiv1557) LoginFromFile(filename string) {
 		panic(err)
 	}
 
-	section := cfg.Section("1557")
+	section := cfg.Section(configSection)
 
-	phone := section.Key("phone").String()
-	password := section.Key("pass").String()
+	phone := section.Key(loginField).String()
+	password := section.Key(passField).String()
 
 	k.Login(phone, password)
 }
@@ -139,7 +160,7 @@ func (k *Kyiv1557) LoginFromFile(filename string) {
 func (k *Kyiv1557) SelectAddress(address *Kyiv1557Address) {
 	mainUrl := getUrl()
 
-	resp, err := k.client.PostForm(mainUrl, url.Values{"main-address": {address.Id}})
+	resp, err := k.client.PostForm(mainUrl, url.Values{addrSwitchField: {address.Id}})
 	if err != nil {
 		panic(err)
 	}
@@ -153,17 +174,17 @@ func main() {
 
 	fmt.Println(kyiv1557.CurrentAddress.Name)
 	for _, message := range kyiv1557.Messages {
-		fmt.Println("---")
+		fmt.Println(msgDelimiter)
 		fmt.Println(message.Text)
 	}
 
 	for _, address := range kyiv1557.Addresses[1:] {
-		fmt.Println("===")
+		fmt.Println(addrDelimiter)
 		kyiv1557.SelectAddress(address)
 
 		fmt.Println(kyiv1557.CurrentAddress.Name)
 		for _, message := range kyiv1557.Messages {
-			fmt.Println("---")
+			fmt.Println(msgDelimiter)
 			fmt.Println(message.Text)
 		}
 	}
