@@ -104,10 +104,10 @@ func (k *Kyiv1557) Login(phone string, password string) {
 	loginUrl := getUrl("login")
 
 	resp, err := k.client.PostForm(loginUrl, url.Values{"phone": {phone}})
-	defer resp.Body.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer resp.Body.Close()
 
 	redirectUrl := resp.Request.URL.String()
 	resp, err = k.client.PostForm(redirectUrl, url.Values{"pass": {password}})
