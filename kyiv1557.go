@@ -129,6 +129,7 @@ func (k *Kyiv1557) Login(phone string, password string) {
 		panic(err)
 	}
 	defer resp.Body.Close()
+	io.Copy(io.Discard, resp.Body)
 
 	redirectUrl := resp.Request.URL.String()
 	resp, err = k.client.PostForm(redirectUrl, url.Values{passField: {password}})
@@ -188,5 +189,4 @@ func main() {
 			fmt.Println(message.Text)
 		}
 	}
-
 }
