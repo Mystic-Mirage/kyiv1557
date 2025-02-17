@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/gookit/ini/v2"
+	"gopkg.in/ini.v1"
 )
 
 type Kyiv1557Address struct {
@@ -123,13 +123,15 @@ func (k *Kyiv1557) LoginFromFile(filename string) {
 		filename = "1557.ini"
 	}
 
-	err := ini.LoadExists(filename)
+	cfg, err := ini.Load(filename)
 	if err != nil {
 		panic(err)
 	}
 
-	phone := ini.String("1557.phone")
-	password := ini.String("1557.pass")
+	section := cfg.Section("1557")
+
+	phone := section.Key("phone").String()
+	password := section.Key("pass").String()
 
 	k.Login(phone, password)
 }
