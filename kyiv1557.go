@@ -51,11 +51,11 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 			id, _ := s.Attr("value")
 			name := strings.TrimSpace(s.Text())
 
-			address := Kyiv1557Address{id, name}
-			k.Addresses = append(k.Addresses, &address)
+			address := &Kyiv1557Address{id, name}
+			k.Addresses = append(k.Addresses, address)
 
 			if _, exists := s.Attr("selected"); exists {
-				k.CurrentAddress = &address
+				k.CurrentAddress = address
 			}
 
 			if k.CurrentAddress == nil && len(k.Addresses) > 0 {
