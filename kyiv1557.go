@@ -85,8 +85,8 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 			text := strings.Join(paragraphs, "\n")
 			warn := s.HasClass("claim-message-green")
 
-			message := Kyiv1557Message{text, warn}
-			k.Messages = append(k.Messages, &message)
+			message := &Kyiv1557Message{text, warn}
+			k.Messages = append(k.Messages, message)
 		},
 	)
 }
