@@ -1,4 +1,6 @@
 /.idea/
 /.venv/
+/__pycache__/
 *.ini
 *.dat
+kyiv1557
