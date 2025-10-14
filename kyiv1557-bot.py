@@ -60,7 +60,9 @@ async def main():
     tg = Telegram()
 
     try:
-        await kyiv1557.login_from_file()
+        if not await kyiv1557.load_session():
+            await kyiv1557.login_from_file()
+            kyiv1557.save_session()
         assert kyiv1557.current_address, "Can't parse current address"
         assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:

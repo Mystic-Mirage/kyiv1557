@@ -1,5 +1,7 @@
+import json
 from contextlib import suppress
 from dataclasses import dataclass
+from pathlib import Path
 
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
@@ -33,6 +35,7 @@ class Kyiv1557:
     _MESSAGE_ITEM_CLASS = "claim-message-item"
     _MESSAGE_WARN_CLASS = "claim-message-green"
     _DEFAULT_CONFIG_FILENAME = "1557.ini"
+    _DEFAULT_COOKIES_FILENAME = "1557_cookies.json"
     _CONFIG_SECTION = "1557"
 
     def __init__(self):
@@ -126,6 +129,27 @@ class Kyiv1557:
 
         await self.login(phone, password)
 
+    def save_session(self, filename: str = _DEFAULT_COOKIES_FILENAME) -> None:
+        data = {cookie.key: cookie.value for cookie in self._session.cookie_jar}
+        Path(filename).write_text(json.dumps(data, indent=2))
+
+    @async_to_sync_wraps
+    async def load_session(self, filename: str = _DEFAULT_COOKIES_FILENAME) -> bool:
+        path = Path(filename)
+        if not path.exists():
+            return False
+
+        data = json.loads(path.read_text())
+        self._session.cookie_jar.update_cookies(data)
+
+        url = self._url()
+        async with self._session.get(url) as response:
+            response.raise_for_status()
+
+            self._parse(await response.text())
+
+        return bool(self.current_address)
+
     @async_to_sync_wraps
     async def select_address(self, address: Kyiv1557Address):
         url = self._url()
@@ -140,7 +164,10 @@ class Kyiv1557:
 
 if __name__ == "__main__":
     kyiv1557 = Kyiv1557()
-    kyiv1557.login_from_file()
+
+    if not kyiv1557.load_session():
+        kyiv1557.login_from_file()
+        kyiv1557.save_session()
 
     print(kyiv1557.current_address)
     for message in kyiv1557.messages:
