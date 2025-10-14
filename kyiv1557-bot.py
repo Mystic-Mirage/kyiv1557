@@ -66,7 +66,9 @@ async def main():
         assert kyiv1557.current_address, "Can't parse current address"
         assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:
-        await tg.send(repr(e), admin=True)
+        error_file = HashFile("error")
+        if error_file.check(e):
+            await tg.send(repr(e), admin=True)
         return
 
     hash_file = HashFile(kyiv1557.current_address.id)
