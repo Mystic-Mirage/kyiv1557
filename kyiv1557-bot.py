@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import get_event_loop
 from configparser import ConfigParser
+from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 
@@ -42,12 +43,17 @@ class Telegram:
 
 
 class HashFile:
-    def __init__(self, name):
+    def __init__(self, name, *, mtime=False):
         self._path = Path(f"{name}.dat")
+        self._mtime = mtime
         self._old_hash = self._path.read_bytes() if self._path.exists() else b""
         self._new_hash = b""
 
-    def check(self, data):
+    def check(self, data) -> bool:
+        if self._mtime:
+            mtime = datetime.fromtimestamp(self._path.stat().st_mtime)
+            if datetime.now() - mtime > timedelta(hours=1):
+                return True
         self._new_hash = sha256(repr(data).encode()).digest()
         return self._old_hash != self._new_hash
 
@@ -66,7 +72,7 @@ async def main():
         assert kyiv1557.current_address, "Can't parse current address"
         assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:
-        error_file = HashFile("error")
+        error_file = HashFile("error", mtime=True)
         if error_file.check(e):
             await tg.send(repr(e), admin=True)
         return
