@@ -83,7 +83,7 @@ class Kyiv1557:
             for block in blocks:
                 items = block.find_all("div", {"class": self._MESSAGE_ITEM_CLASS})
                 message = Kyiv1557Message(
-                    "\n".join(
+                    "\n\n".join(
                         " ".join(line.strip() for line in tag.text.split())
                         for tag in items
                     ),

@@ -103,7 +103,7 @@ func (k *Kyiv1557) parse(body io.ReadCloser) {
 				},
 			)
 
-			text := strings.Join(paragraphs, "\n")
+			text := strings.Join(paragraphs, "\n\n")
 			warn := s.HasClass(msgWarnClass)
 
 			message := &Kyiv1557Message{text, warn}
