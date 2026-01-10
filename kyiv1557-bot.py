@@ -53,6 +53,8 @@ class HashFile:
 
     def check(self, data) -> bool:
         if self._mtime:
+            if not self._path.exists():
+                return True
             mtime = datetime.fromtimestamp(self._path.stat().st_mtime)
             if datetime.now() - mtime > timedelta(hours=1):
                 return True
@@ -102,6 +104,7 @@ async def main():
         error_file = HashFile("error", mtime=True)
         if error_file.check(e):
             await tg.send(repr(e), admin=True)
+            error_file.save()
         return
 
     cache_file = CacheFile(kyiv1557.current_address.id)
