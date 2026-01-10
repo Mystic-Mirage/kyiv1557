@@ -19,21 +19,25 @@ class Kyiv1557Address:
         return self.name
 
 
-@dataclass
+@dataclass(frozen=True)
 class Kyiv1557Message:
+    title: str
     text: str
     warn: bool
 
     def __str__(self):
-        return self.text
+        return f"{'(!) ' if self.warn else ''}{self.title}\n\n{self.text}"
+
+    def __lt__(self, other):
+        return self.title < other.title
 
 
 class Kyiv1557:
-    _URL = "https://1557.kyiv.ua"
+    _URL = "https://dim1557.kyiv.ua"
     _SELECT_ID = "address-select"
     _MESSAGE_BLOCK_CLASS = "claim-message-block"
+    _MESSAGE_TITLE_CLASS = "home-message-block-title"
     _MESSAGE_ITEM_CLASS = "claim-message-item"
-    _MESSAGE_WARN_CLASS = "claim-message-green"
     _DEFAULT_CONFIG_FILENAME = "1557.ini"
     _DEFAULT_COOKIES_FILENAME = "1557_cookies.json"
     _CONFIG_SECTION = "1557"
@@ -81,13 +85,15 @@ class Kyiv1557:
         if blocks := bs.find_all("div", {"class": self._MESSAGE_BLOCK_CLASS}):
             self._messages = []
             for block in blocks:
+                title = block.find("div", {"class": self._MESSAGE_TITLE_CLASS})
                 items = block.find_all("div", {"class": self._MESSAGE_ITEM_CLASS})
                 message = Kyiv1557Message(
+                    title.text.strip(),
                     "\n\n".join(
                         " ".join(line.strip() for line in tag.text.split())
                         for tag in items
                     ),
-                    self._MESSAGE_WARN_CLASS in block.attrs.get("class", []),
+                    len(items) > 1,
                 )
                 self._messages.append(message)
 

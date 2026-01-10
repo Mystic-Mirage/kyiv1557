@@ -1,6 +1,8 @@
 import asyncio
+import json
 from asyncio import get_event_loop
 from configparser import ConfigParser
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -29,7 +31,7 @@ class Telegram:
     async def send(self, message, *, admin=False):
         icon = ""
         if isinstance(message, Kyiv1557Message):
-            text = message.text
+            text = f"{message.title}\n\n{message.text}"
             icon = "⚠️" if message.warn else "✅"
         else:
             text = message
@@ -61,6 +63,31 @@ class HashFile:
         self._path.write_bytes(self._new_hash)
 
 
+class CacheFile:
+    def __init__(self, name):
+        self._path = Path(f"{name}_cache.json")
+        self._cache: set[Kyiv1557Message] = (
+            {
+                Kyiv1557Message(**args) for args in json.loads(self._path.read_text())
+            } if self._path.exists()
+            else set()
+        )
+
+    def diff(self, messages: set[Kyiv1557Message]):
+        new_messages = messages - self._cache
+        self._cache = messages
+        return new_messages
+
+    def save(self):
+        self._path.write_text(
+            json.dumps(
+                [asdict(message) for message in self._cache],
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+
+
 async def main():
     kyiv1557 = Kyiv1557()
     tg = Telegram()
@@ -77,13 +104,12 @@ async def main():
             await tg.send(repr(e), admin=True)
         return
 
-    hash_file = HashFile(kyiv1557.current_address.id)
+    cache_file = CacheFile(kyiv1557.current_address.id)
 
-    if hash_file.check(kyiv1557.messages):
-        for message in kyiv1557.messages:
-            await tg.send(message)
+    for message in sorted(cache_file.diff(set(kyiv1557.messages))):
+        await tg.send(message)
 
-        hash_file.save()
+        cache_file.save()
 
 
 if __name__ == "__main__":
