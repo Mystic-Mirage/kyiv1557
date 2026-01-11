@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 
-from aiohttp import ClientSession
+from aiohttp import ClientError, ClientSession
 
 from kyiv1557 import Kyiv1557, Kyiv1557Message
 
@@ -102,7 +102,8 @@ async def main():
         assert kyiv1557.messages, "Can't parse messages"
     except Exception as e:
         error_file = HashFile("error", mtime=True)
-        if error_file.check(e):
+        exception = str(e) if isinstance(e, ClientError) else e
+        if error_file.check(exception):
             await tg.send(repr(e), admin=True)
             error_file.save()
         return
