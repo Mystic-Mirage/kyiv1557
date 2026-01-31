@@ -1,4 +1,5 @@
 import asyncio
+import difflib
 import json
 from asyncio import get_event_loop
 from configparser import ConfigParser
@@ -39,7 +40,7 @@ class Telegram:
             icon = "⛔"
         chat = self._admin if admin else self._chat
         response = await self._session.post(
-            self._url, data={"chat_id": chat, "text": " ".join((icon, text))}
+            self._url, data={"chat_id": chat, "parse_mode": "HTML", "text": " ".join((icon, text))}
         )
         response.raise_for_status()
 
@@ -68,17 +69,20 @@ class HashFile:
 class CacheFile:
     def __init__(self, name):
         self._path = Path(f"{name}_cache.json")
-        self._cache: set[Kyiv1557Message] = (
-            {
+        self._cache: list[Kyiv1557Message] = (
+            [
                 Kyiv1557Message(**args) for args in json.loads(self._path.read_text())
-            } if self._path.exists()
-            else set()
+            ] if self._path.exists()
+            else []
         )
 
-    def diff(self, messages: set[Kyiv1557Message]):
-        new_messages = messages - self._cache
+    def diff(self, messages: list[Kyiv1557Message]) -> list[tuple[Kyiv1557Message, Kyiv1557Message]]:
+        result = []
+        for old, new in zip(self._cache, messages):
+            if old != new:
+                result.append((old, new))
         self._cache = messages
-        return new_messages
+        return result
 
     def save(self):
         self._path.write_text(
@@ -88,6 +92,35 @@ class CacheFile:
                 ensure_ascii=False,
             )
         )
+
+
+def diff_message(old: Kyiv1557Message, new: Kyiv1557Message) -> Kyiv1557Message:
+    if old.warn != new.warn:
+        return new
+
+    old_lines = old.text.splitlines()
+    new_lines = new.text.splitlines()
+
+    diff = difflib.SequenceMatcher(a=old_lines, b=new_lines)
+
+    result = []
+    for tag, i1, i2, j1, j2 in diff.get_opcodes():
+        if tag == "equal":
+            for line in new_lines[j1:j2]:
+                result.append(line)
+        elif tag == "replace":
+            for line in old_lines[i1:i2]:
+                result.append(f"<s>{line}</s>")
+            for line in new_lines[j1:j2]:
+                result.append(f"<i>{line}</i>")
+        elif tag == "delete":
+            for line in old_lines[i1:i2]:
+                result.append(f"<s>{line}</s>")
+        elif tag == "insert":
+            for line in new_lines[j1:j2]:
+                result.append(f"<b>{line}</b>")
+
+    return Kyiv1557Message(title=new.title, text="\n".join(result), warn=new.warn)
 
 
 async def main():
@@ -110,7 +143,8 @@ async def main():
 
     cache_file = CacheFile(kyiv1557.current_address.id)
 
-    for message in sorted(cache_file.diff(set(kyiv1557.messages))):
+    for old, new in cache_file.diff(kyiv1557.messages):
+        message = diff_message(old, new)
         await tg.send(message)
 
         cache_file.save()
