@@ -105,7 +105,7 @@ async def main():
         exception = str(e) if isinstance(e, ClientError) else e
         if error_file.check(exception):
             await tg.send(repr(e), admin=True)
-            error_file.save()
+        error_file.save()
         return
 
     cache_file = CacheFile(kyiv1557.current_address.id)
