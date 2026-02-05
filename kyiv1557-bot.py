@@ -98,8 +98,8 @@ def diff_message(old: Kyiv1557Message, new: Kyiv1557Message) -> Kyiv1557Message:
     if old.warn != new.warn:
         return new
 
-    old_lines = old.text.splitlines()
-    new_lines = new.text.splitlines()
+    old_lines = old.text.splitlines()[::-1]
+    new_lines = new.text.splitlines()[::-1]
 
     diff = difflib.SequenceMatcher(a=old_lines, b=new_lines)
 
@@ -120,7 +120,7 @@ def diff_message(old: Kyiv1557Message, new: Kyiv1557Message) -> Kyiv1557Message:
             for line in new_lines[j1:j2]:
                 result.append(f"<b>{line}</b>")
 
-    return Kyiv1557Message(title=new.title, text="\n".join(result), warn=new.warn)
+    return Kyiv1557Message(title=new.title, text="\n".join(result[::-1]), warn=new.warn)
 
 
 async def main():
