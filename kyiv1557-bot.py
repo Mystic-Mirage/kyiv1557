@@ -109,10 +109,10 @@ def diff_message(old: Kyiv1557Message, new: Kyiv1557Message) -> Kyiv1557Message:
             for line in new_lines[j1:j2]:
                 result.append(line)
         elif tag == "replace":
-            for line in old_lines[i1:i2]:
-                result.append(f"<s>{line}</s>")
             for line in new_lines[j1:j2]:
                 result.append(f"<i>{line}</i>")
+            for line in old_lines[i1:i2]:
+                result.append(f"<s>{line}</s>")
         elif tag == "delete":
             for line in old_lines[i1:i2]:
                 result.append(f"<s>{line}</s>")
