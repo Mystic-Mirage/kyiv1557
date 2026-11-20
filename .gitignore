@@ -4,4 +4,6 @@
 *.ini
 *.dat
 *.json
+*.session
+*.session-journal
 kyiv1557
