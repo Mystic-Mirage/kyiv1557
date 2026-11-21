@@ -42,16 +42,23 @@ class Telegram:
 class CacheFile:
     def __init__(self, path):
         self._path = path
-        self._old_message = (
+        self._old_message: str | None = (
             json.loads(path.read_text())["message"] if path.exists() else None
         )
-        self._new_message = self._old_message
+        self._new_message: str | None = self._old_message
 
     def diff(self, message):
+        self._new_message = message
         if self._old_message == message:
             return None
-        self._new_message = message
-        return diff_message(self._old_message, message)
+
+        old = (
+            normalize_message(self._old_message)
+            if self._old_message is not None
+            else None
+        )
+        new = normalize_message(message)
+        return diff_message(old, new)
 
     def save(self):
         self._path.write_text(
@@ -89,6 +96,10 @@ def diff_message(old, new):
     return '\n\n'.join(result[::-1])
 
 
+def normalize_message(message):
+    return message.replace("''", "'").replace("\n\n", "\n")
+
+
 async def main():
     config_path = Path(__file__).with_name("1557_tg.ini")
     config = ConfigParser()
@@ -99,11 +110,10 @@ async def main():
     message = await receive_1557_message()
     if not message:
         raise RuntimeError("The 1557 bot returned an empty message")
-    message = message.replace("''", "'")
-    message = message.replace("\n\n", "\n")
 
     message = cache_file.diff(message)
     if message is None:
+        cache_file.save()
         return
 
     telegram = Telegram()
