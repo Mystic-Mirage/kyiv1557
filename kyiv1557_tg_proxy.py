@@ -110,6 +110,7 @@ async def main():
     message = await receive_1557_message()
     if not message:
         raise RuntimeError("The 1557 bot returned an empty message")
+    icon = "⚠️" if len(message.splitlines()) > 2 else "✅"
 
     message = cache_file.diff(message)
     if message is None:
@@ -118,7 +119,7 @@ async def main():
 
     telegram = Telegram()
     try:
-        await telegram.send(message)
+        await telegram.send(f"{icon} {message}")
     finally:
         await telegram.close()
     cache_file.save()
