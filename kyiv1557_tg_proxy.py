@@ -100,6 +100,7 @@ async def main():
     if not message:
         raise RuntimeError("The 1557 bot returned an empty message")
     message = message.replace("''", "'")
+    message = message.replace("\n\n", "\n")
 
     message = cache_file.diff(message)
     if message is None:
