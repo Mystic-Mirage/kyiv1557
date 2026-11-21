@@ -47,18 +47,20 @@ class CacheFile:
         )
         self._new_message: str | None = self._old_message
 
-    def diff(self, message):
-        self._new_message = message
-        if self._old_message == message:
-            return None
+    def unchanged(self, message):
+        return self._old_message == message
 
+    def update(self, message):
+        self._new_message = message
+
+    def diff(self, message):
+        self.update(message)
         old = (
             normalize_message(self._old_message)
             if self._old_message is not None
             else None
         )
-        new = normalize_message(message)
-        return diff_message(old, new)
+        return diff_message(old, normalize_message(message))
 
     def save(self):
         self._path.write_text(
@@ -118,12 +120,21 @@ async def main():
     message = await receive_1557_message()
     if not message:
         raise RuntimeError("The 1557 bot returned an empty message")
-    icon = "⚠️" if len(message.splitlines()) > 2 else "✅"
 
-    message = cache_file.diff(message)
-    if message is None:
+    if cache_file.unchanged(message):
         cache_file.save()
         return
+
+    if len(message.splitlines()) > 2:
+        icon = "⚠️"
+        message = cache_file.diff(message)
+    else:
+        cache_file.update(message)
+        icon = "✅"
+        message = '\n\n'.join(
+            html.escape(line, quote=False)
+            for line in normalize_message(message).splitlines()
+        )
 
     telegram = Telegram()
     try:
