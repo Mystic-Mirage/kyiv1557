@@ -76,7 +76,7 @@ def diff_message(old, new):
                 result.append(html.escape(line, quote=False))
         elif tag == "replace":
             for line in new_lines[j1:j2]:
-                result.append(f"<i>{html.escape(line, quote=False)}</i>")
+                result.append(f"<b>{html.escape(line, quote=False)}</b>")
             for line in old_lines[i1:i2]:
                 result.append(f"<s>{html.escape(line, quote=False)}</s>")
         elif tag == "delete":
