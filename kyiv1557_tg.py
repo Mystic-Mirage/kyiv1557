@@ -47,10 +47,12 @@ async def main():
                 ):
                     return button_message
 
-        await client.send_message(bot, request_text)
+        request = await client.send_message(bot, request_text)
 
-        message = await wait_button(address)
-        await message.click(text=address)
+        response = await wait_button(address)
+        await response.click(text=address)
+
+        await request.delete()
 
         result = await wait_message()
         return result.raw_text
