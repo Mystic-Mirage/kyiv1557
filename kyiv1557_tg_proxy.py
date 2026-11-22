@@ -122,7 +122,6 @@ async def main():
         raise RuntimeError("The 1557 bot returned an empty message")
 
     if cache_file.unchanged(message):
-        cache_file.save()
         return
 
     if len(message.splitlines()) > 1:
