@@ -106,7 +106,7 @@ def diff_message(old, new):
     return '\n\n'.join(result[::-1])
 
 
-def normalize_message(message):
+def normalize_message(message) -> str:
     return message.replace("''", "'").replace("\n\n", "\n")
 
 
@@ -125,16 +125,15 @@ async def main():
         cache_file.save()
         return
 
-    if len(message.splitlines()) > 2:
+    if len(message.splitlines()) > 1:
         icon = "⚠️"
         message = cache_file.diff(message)
     else:
         cache_file.update(message)
         icon = "✅"
-        message = '\n\n'.join(
-            html.escape(line, quote=False)
-            for line in normalize_message(message).splitlines()
-        )
+        message = normalize_message(message)
+        if "створіть заявку" in (lines := message.split(", "))[-1]:
+            message = ", ".join(lines[:-1])
 
     telegram = Telegram()
     try:
