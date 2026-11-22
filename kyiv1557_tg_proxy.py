@@ -50,6 +50,9 @@ class CacheFile:
     def unchanged(self, message):
         return self._old_message == message
 
+    def has_warning_message(self):
+        return self._old_message is not None and is_warning_message(self._old_message)
+
     def update(self, message):
         self._new_message = message
 
@@ -110,6 +113,10 @@ def normalize_message(message) -> str:
     return message.replace("''", "'").replace("\n\n", "\n")
 
 
+def is_warning_message(message):
+    return len(message.splitlines()) > 1
+
+
 async def main():
     config_path = Path(__file__).with_name("1557_tg.ini")
     config = ConfigParser()
@@ -124,9 +131,13 @@ async def main():
     if cache_file.unchanged(message):
         return
 
-    if len(message.splitlines()) > 1:
+    if is_warning_message(message):
         icon = "⚠️"
-        message = cache_file.diff(message)
+        if cache_file.has_warning_message():
+            message = cache_file.diff(message)
+        else:
+            cache_file.update(message)
+            message = diff_message(None, normalize_message(message))
     else:
         cache_file.update(message)
         icon = "✅"
